@@ -1,0 +1,67 @@
+#!/bin/bash
+# =============================================
+# Interactive Blueprint + Nebula Installer
+# =============================================
+
+set -e
+
+# Display custom header
+echo "======================================"
+echo "      Welcome to TRG's Installer       "
+echo "======================================"
+echo ""
+
+# Show menu
+while true; do
+    echo "Please select an option:"
+    echo "1) Install Your Nebula Theme"
+    echo "2) Exit"
+    read -p "Enter your choice [1-2]: " choice
+
+    case $choice in
+        1)
+            echo "📦 Installing Nebula Theme..."
+            
+            # Node.js + Yarn + dependencies
+            sudo apt-get install -y ca-certificates curl gnupg
+            sudo mkdir -p /etc/apt/keyrings
+            curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+            echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+            sudo apt-get update
+            sudo apt-get install -y nodejs
+            sudo npm i -g yarn
+            sudo apt install -y zip unzip git curl wget
+
+            # Pterodactyl setup
+            cd /var/www/pterodactyl
+            yarn
+
+            # Download Blueprint
+            wget "$(curl -s https://api.github.com/repos/BlueprintFramework/framework/releases/latest | grep 'browser_download_url' | cut -d '"' -f 4)" -O release.zip
+            unzip -o release.zip
+            rm release.zip
+
+            # Configure Blueprint
+            touch .blueprintrc
+            echo 'WEBUSER="www-data";
+OWNERSHIP="www-data:www-data";
+USERSHELL="/bin/bash";' > .blueprintrc
+
+            chmod +x blueprint.sh
+            bash blueprint.sh
+
+            # Install Nebula
+            blueprint -install nebula
+
+            echo "✅ Nebula Theme Installed Successfully!"
+            break
+            ;;
+        2)
+            echo "Exiting..."
+            exit 0
+            ;;
+        *)
+            echo "❌ Invalid option, please select 1 or 2."
+            ;;
+    esac
+done
